@@ -86,6 +86,15 @@ def has_state(node, state) -> bool:
     return state in state_flags(node)
 
 
+def is_showing(node) -> bool:
+    """节点当前是否真正显示在屏幕上。
+
+    注意：GTK 隐藏控件在 AT-SPI 树里仍然存在，只是失去 SHOWING；
+    而菜单项无论是否展开都可能保持 SHOWING，所以不要用它对菜单做判定。
+    """
+    return has_state(node, "SHOWING")
+
+
 def extents(node):
     """Screen extents (x, y, width, height) or None."""
     try:
@@ -98,8 +107,11 @@ def extents(node):
 
 
 def find(root, name=None, role=None, text=None, state=None,
-         contains_name: bool = True, max_depth: int = 100):
-    """Return first node matching all provided criteria (substring names)."""
+         showing=None, contains_name: bool = True, max_depth: int = 100):
+    """Return first node matching all provided criteria (substring names).
+
+    showing=True/False 额外按 SHOWING 状态过滤（隐藏控件仍在树中）。
+    """
     for node in walk(root, max_depth):
         if name is not None:
             nm = node_name(node)
@@ -111,12 +123,17 @@ def find(root, name=None, role=None, text=None, state=None,
             continue
         if state is not None and not has_state(node, state):
             continue
+        if showing is True and not is_showing(node):
+            continue
+        if showing is False and is_showing(node):
+            continue
         return node
     return None
 
 
 def find_all(root, name=None, role=None, text=None, state=None,
-             contains_name: bool = True, max_depth: int = 100) -> list:
+             showing=None, contains_name: bool = True,
+             max_depth: int = 100) -> list:
     out = []
     for node in walk(root, max_depth):
         if name is not None:
@@ -128,6 +145,10 @@ def find_all(root, name=None, role=None, text=None, state=None,
         if text is not None and text not in text_of(node):
             continue
         if state is not None and not has_state(node, state):
+            continue
+        if showing is True and not is_showing(node):
+            continue
+        if showing is False and is_showing(node):
             continue
         out.append(node)
     return out

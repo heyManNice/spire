@@ -21,12 +21,27 @@ def _read_proc_file(pid: str, name: str) -> bytes:
 
 
 def find_display_env(display: str = ":2") -> dict:
-    """Discover DISPLAY + session bus env from the running desktop session."""
+    """Discover DISPLAY + session bus env for a target display.
+
+    Priority:
+    1. 当前进程环境已带有匹配的 DISPLAY 与会话总线（xvfb-run + dbus-run-session
+       或外部注入），直接使用，无需扫描；
+    2. 扫描 /proc：优先 xfce4-session，其次任意带会话总线的进程。
+    """
+    if os.environ.get("DISPLAY") == display and \
+            os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
+        out = {"DISPLAY": display}
+        for key in ("DBUS_SESSION_BUS_ADDRESS", "XDG_RUNTIME_DIR",
+                    "XDG_SESSION_TYPE", "XAUTHORITY", "AT_SPI_BUS_ADDRESS"):
+            if os.environ.get(key):
+                out[key] = os.environ[key]
+        return out
+
+    session_candidate = None
+    any_candidate = None
     for proc in glob.glob("/proc/[0-9]*"):
         pid = proc.rsplit("/", 1)[1]
         cmdline = _read_proc_file(pid, "cmdline").replace(b"\0", b" ")
-        if b"xfce4-session" not in cmdline:
-            continue
         raw = _read_proc_file(pid, "environ")
         env = {}
         for item in raw.split(b"\0"):
@@ -36,12 +51,23 @@ def find_display_env(display: str = ":2") -> dict:
         if env.get("DISPLAY") == display:
             out = {"DISPLAY": display}
             for key in ("DBUS_SESSION_BUS_ADDRESS", "XDG_RUNTIME_DIR",
-                        "XDG_SESSION_TYPE", "XAUTHORITY"):
+                        "XDG_SESSION_TYPE", "XAUTHORITY",
+                        "AT_SPI_BUS_ADDRESS"):
                 if key in env:
                     out[key] = env[key]
-            return out
+            if b"xfce4-session" in cmdline:
+                return out
+            if session_candidate is None and \
+                    env.get("DBUS_SESSION_BUS_ADDRESS"):
+                session_candidate = out
+            if any_candidate is None and env.get("DBUS_SESSION_BUS_ADDRESS"):
+                any_candidate = out
+    if session_candidate is not None:
+        return session_candidate
+    if any_candidate is not None:
+        return any_candidate
     raise RuntimeError(
-        f"no XFCE session found for display {display}; "
+        f"no session found for display {display}; "
         "is the desktop session running?"
     )
 
