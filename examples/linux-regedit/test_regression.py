@@ -16,24 +16,24 @@ def expand_row(app, name: str):
 def test_accessible_surface_and_menu_states(regedit):
     """Static surface: menus, named panes and disabled actions."""
     app = regedit.app
-    assert wait_node(app, role="frame", name="注册表编辑器")
+    assert wait_node(app, role="frame", name="Regedit")
 
-    assert wait_node(app, name="地址栏输入框", role="text",
+    assert wait_node(app, name="Address bar input", role="text",
                      state="EDITABLE")
-    assert wait_node(app, name="目录树", role="tree table")
-    assert wait_node(app, name="配置面板", role="split pane")
+    assert wait_node(app, name="Directory tree", role="tree table")
+    assert wait_node(app, name="Value panel", role="split pane")
 
-    for menu in ("文件", "编辑", "查看", "收藏夹", "帮助"):
+    for menu in ("File", "Edit", "View", "Favorites", "Help"):
         assert wait_node(app, name=menu, role="menu"), f"missing menu {menu}"
 
     # 查看 → 地址栏 是勾选状态
-    loc = wait_node(app, name="地址栏", role="check menu item")
+    loc = wait_node(app, name="Address", role="check menu item")
     assert tree.has_state(loc, "CHECKED")
 
     # 只读阶段的禁用菜单项
-    assert tree.has_state(wait_node(app, name="权限…", role="menu item"),
+    assert tree.has_state(wait_node(app, name="Permission", role="menu item"),
                           "DISABLED")
-    assert tree.has_state(wait_node(app, name="删除", role="menu item"),
+    assert tree.has_state(wait_node(app, name="Delete", role="menu item"),
                           "DISABLED")
 
 
@@ -41,7 +41,7 @@ def test_fake_root_tree_navigation(regedit, fake_roots):
     """Expand the fake tree and load sample.ini through the UI."""
     app = regedit.app
 
-    expand_row(regedit, "计算机")
+    expand_row(regedit, "Computer")
     for root in ("HKEY_LOCAL_MACHINE", "HKEY_CURRENT_USER",
                  "HKEY_SYSTEM_BOOT"):
         assert wait_node(app, name=root, role="table cell")
@@ -53,7 +53,7 @@ def test_fake_root_tree_navigation(regedit, fake_roots):
 
     wait_until(lambda: tree.find(app, text="Port") is not None,
                timeout=8, message="value pane did not load")
-    assert tree.find(app, role="tree table", name="配置项表格")
+    assert tree.find(app, role="tree table", name="Value table")
 
     expected = {
         "[server]": "table cell",
@@ -73,7 +73,7 @@ def test_fake_root_tree_navigation(regedit, fake_roots):
 def test_location_bar_jump(regedit, fake_roots):
     """Typing a path in the address bar opens a config file."""
     app = regedit.app
-    entry = wait_node(app, name="地址栏输入框", role="text")
+    entry = wait_node(app, name="Address bar input", role="text")
     type_text(entry, str(fake_roots["sample_ini"]))
     press("Return")
 

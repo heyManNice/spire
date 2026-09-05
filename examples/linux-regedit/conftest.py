@@ -24,11 +24,6 @@ from spire.wait import wait_node, wait_until
 
 REGEDIT_BIN = REGEDIT / "builddir" / "linux-regedit"
 SAMPLES = REGEDIT / "testdata"
-MO_FILE = Path("/usr/local/share/locale/zh_CN/LC_MESSAGES/linux-regedit.mo")
-
-if not MO_FILE.exists():
-    pytest.skip("zh_CN translations not installed; run "
-                "'meson install -C regedit/builddir' first")
 
 
 def kill_regedit():
@@ -71,6 +66,10 @@ def fake_roots(tmp_path_factory, session_env) -> dict:
             "LR_TEST_BOOT": str(boot),
             "XDG_CONFIG_HOME": str(xdg),
             "HOME": "/root",
+            # 回归测试固定走英文界面（源语言回退，无需安装 locale/翻译）
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "LANGUAGE": "C",
         },
         "etc": etc,
         "config": config,
@@ -93,13 +92,13 @@ def regedit(fake_roots, display):
         try:
             wait_node(app.app, role="frame", timeout=10)
             wait_until(lambda: inp.activate_window(
-                           wm_class="linux-regedit", name="注册表编辑器",
+                           wm_class="linux-regedit", name="Regedit",
                            display=display),
                        timeout=5, message="window not mappable")
             # 窗口已属于新实例后重新绑定句柄，避免旧 AT-SPI 对象残留
             app.app = tree.app_by_name("linux-regedit", live=True)
             inp.move_window(0, 100, wm_class="linux-regedit",
-                            name="注册表编辑器", display=display)
+                            name="Regedit", display=display)
             yield app
         finally:
             kill_regedit()
