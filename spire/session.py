@@ -72,7 +72,8 @@ class AppSession:
     def wait_ready(self, timeout=None):
         timeout = timeout or self.ready_timeout
         self.app = wait_until(
-            lambda: tree.app_by_name(self.app_name) if self.app_name else None,
+            lambda: tree.app_by_name(self.app_name, live=True)
+            if self.app_name else None,
             timeout=timeout, interval=0.2,
             message=f"app {self.app_name!r} not visible to AT-SPI",
         )

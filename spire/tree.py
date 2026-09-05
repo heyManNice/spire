@@ -171,10 +171,20 @@ def dump_text(root, max_depth: int = 25, max_nodes: int = 1000) -> str:
     return "\n".join(lines)
 
 
-def app_by_name(app_name: str):
-    """Find a running application by name (substring, case-insensitive)."""
+def app_by_name(app_name: str, live: bool = False):
+    """Find a running application by name (substring, case-insensitive).
+
+    With ``live=True`` only applications that currently expose a SHOWING
+    frame are considered, which avoids grabbing a dying instance that is
+    still listed in the AT-SPI registry.
+    """
     wanted = app_name.lower()
     for app in applications():
-        if wanted in (app.name or "").lower():
+        if wanted not in (app.name or "").lower():
+            continue
+        if not live:
             return app
+        for node in walk(app, max_depth=4):
+            if role_name(node) == "frame" and has_state(node, "SHOWING"):
+                return app
     return None
