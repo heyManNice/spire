@@ -24,6 +24,11 @@ from spire.wait import wait_node, wait_until
 
 REGEDIT_BIN = REGEDIT / "builddir" / "linux-regedit"
 SAMPLES = REGEDIT / "testdata"
+MO_FILE = Path("/usr/local/share/locale/zh_CN/LC_MESSAGES/linux-regedit.mo")
+
+if not MO_FILE.exists():
+    pytest.skip("zh_CN translations not installed; run "
+                "'meson install -C regedit/builddir' first")
 
 
 def kill_regedit():
