@@ -28,8 +28,9 @@ from spire.wait import wait_until
 with AppSession(["/root/regedit/builddir/linux-regedit"],
                 env={"LR_TEST_ETC": "/tmp/fake/etc"},
                 app_name="linux-regedit") as app:
-    menu = find(app.app, name="文件", role="menu")
+    menu = find(app.app, name="File", role="menu")
     assert menu is not None
 ```
 
-See `examples/linux-regedit/` for a complete pytest-based regression demo.
+linux-regedit 的完整 GUI 回归套件已随其仓库维护（`regedit/tests/gui/`），
+本仓库只提供 spire 测试库本身。
